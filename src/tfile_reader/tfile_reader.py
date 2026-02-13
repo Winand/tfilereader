@@ -1,4 +1,6 @@
 """
+Apache Hadoop TFile Reader.
+
 https://github.com/facebookarchive/hadoop-20/blob/master/src/core/org/apache/hadoop/io/file/tfile/TFileDumper.java
 """
 
@@ -10,6 +12,8 @@ from typing import TYPE_CHECKING, BinaryIO, NamedTuple
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+
+    from _typeshed import ReadableBuffer  # bytes | bytearray
 
 
 class MetaIndexEntry(NamedTuple):
@@ -67,10 +71,8 @@ def read_vlong(f: "io.BytesIO | io.BufferedReader") -> int:
     raise ValueError(msg)
 
 
-def decompress(data: "io.BytesIO | bytes", algo: str) -> io.BytesIO:
+def decompress(data: bytes, algo: str) -> io.BytesIO:
     "Decompress data using zlib if algo=gz or keep as-is if algo=none."
-    if isinstance(data, io.BytesIO):
-        data = data.read()
     if algo == "gz":  # gzipped data starts with 0x78
         data = zlib.decompress(data)
     elif algo == "none":
@@ -97,14 +99,9 @@ def read_byte_array(buf: "io.BytesIO | io.BufferedReader") -> bytearray:
     return array
 
 
-def read_utf8(data: "io.BytesIO | bytes | bytearray") -> str:
+def read_utf8(data: "io.BytesIO | ReadableBuffer") -> str:
     "Read string in Java writeUTF format: 2-byte length + content."
-    if isinstance(data, (bytes, bytearray)):
-        buf = io.BytesIO(data)
-    elif isinstance(data, io.BytesIO):
-        buf = data
-    else:
-        raise TypeError
+    buf = data if isinstance(data, io.BytesIO) else io.BytesIO(data)
     raw_data_len = buf.read(2)
     if not raw_data_len:
         raise EOFError
@@ -112,7 +109,7 @@ def read_utf8(data: "io.BytesIO | bytes | bytearray") -> str:
     return buf.read(data_len).decode()
 
 
-def read_utf8_array(val_bytes: bytes) -> "Generator[str]":
+def read_utf8_array(val_bytes: "ReadableBuffer") -> "Generator[str]":
     "Read a list of UTF-8 strings using `read_utf8`."
     buf = io.BytesIO(val_bytes)
     try:
@@ -240,7 +237,7 @@ class TFileReader:
             index[meta_name] = MetaIndexEntry(algo, off, c_sz, r_sz)
         return index
 
-    def __iter__(self) -> "Generator[tuple[str, bytes]]":
+    def __iter__(self) -> "Generator[tuple[str, bytearray]]":
         "Iterate over TFile key-value pairs."
         index = DataIndex(self.f, self.meta_index)
         for blk in index.list_regions:
