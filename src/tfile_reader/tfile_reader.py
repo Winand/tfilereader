@@ -81,14 +81,25 @@ def decompress(data: "io.BytesIO | bytes", algo: str) -> io.BytesIO:
     return io.BytesIO(data)
 
 
-def read_byte_array(buf: "io.BytesIO | io.BufferedReader") -> bytes:
-    "Read a variable length byte array from buffer."
-    return buf.read(read_vlong(buf))
+def read_byte_array(buf: "io.BytesIO | io.BufferedReader") -> bytearray:
+    "Read a variable length (possibly chunked) byte array from buffer."
+    array = bytearray()
+    length = read_vlong(buf)
+    try:
+        while length < 0:
+            array.extend(buf.read(abs(length)))
+            # we may end up exactly at EOF
+            length = read_vlong(buf)
+    except EOFError:
+        print(f"WARN: unexpected EOF while reading chunked byte array at {buf.tell()}")
+        return array
+    array.extend(buf.read(length))
+    return array
 
 
-def read_utf8(data: "io.BytesIO | bytes") -> str:
+def read_utf8(data: "io.BytesIO | bytes | bytearray") -> str:
     "Read string in Java writeUTF format: 2-byte length + content."
-    if isinstance(data, bytes):
+    if isinstance(data, (bytes, bytearray)):
         buf = io.BytesIO(data)
     elif isinstance(data, io.BytesIO):
         buf = data
