@@ -7,3 +7,6 @@ Only zlib (gz) [compression](https://github.com/facebookarchive/hadoop-20/blob/m
 is supported. LZMA support can be added using *lzma* module, LZO requires an external library.
 
 Requirements: Python 3.6+
+
+## See also
+[HADOOP-3315 New binary file format](https://issues.apache.org/jira/browse/HADOOP-3315)
