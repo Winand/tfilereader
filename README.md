@@ -9,4 +9,5 @@ is supported. LZMA support can be added using *lzma* module, LZO requires an ext
 Requirements: Python 3.6+
 
 ## See also
-[HADOOP-3315 New binary file format](https://issues.apache.org/jira/browse/HADOOP-3315)
+- [HADOOP-3315 New binary file format](https://issues.apache.org/jira/browse/HADOOP-3315)
+- [shanyu/hadooplogparser](https://github.com/shanyu/hadooplogparser) — Hadoop Yarn aggregated log parser utility
